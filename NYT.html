@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>NYT Solo</title>
+	<link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+	<!-- Custom CSS -->
+	<link rel="stylesheet" type="text/css" href="NYT_style.css"></style>
+
+</head>
+<body>
+
+	<div class="jumbotron">
+  		<div class="container">
+    		<h1 class="display-3"><i class="fa fa-newspaper-o"></i>New York Times Search</h1>
+    	</div>	
+    </div>
+    <div class="row">
+    	<div class="col-sm-12">
+
+		    <div>	
+				
+		    	<form id="query">
+
+		    		<h3><i class="fa fa-list-alt"></i>Search Parameters</h3> 
+				  	<div class="form-group field_1">
+		    			<label for="Textarea1">Search Term:</label>
+		    			<textarea class="form-control" id="Textarea1" rows="1"></textarea>
+		  			</div>
+			 	  	<div class="form-group">
+		    			<label for="Select1">Number of Records to Retrieve: </label>
+		    			<select class="form-control" id="Select1">
+			      			<option>1</option>
+			      			<option>5</option>
+			      			<option>10</option>
+		    			</select>
+				  	</div>
+				  	<div class="form-group field_2">
+		    			<label for="Textarea2">Start Year :</label>
+		    			<textarea class="form-control" id="Textarea2" rows="1"></textarea>
+		  			</div>
+		  			<div class="form-group field_3">
+		    			<label for="Textarea3">End Year :</label>
+		    			<textarea class="form-control" id="Textarea3" rows="1"></textarea>
+		  			</div>
+				  	<button type="button" class="btn btn-secondary search"><i class="fa fa-search"></i>Search</button>
+				  	<button type="button" class="btn btn-secondary clear"><i class="fa fa-trash"></i>Clear Results</button>
+				</form>
+		  	</div>
+		</div> 	
+	</div>
+	<div class="row">
+		<div class="col-sm-12">
+			<div>
+		    	<div class="results">
+					<h3><i class="fa fa-table"></i>Top Articles</h3> 	
+				</div>
+			</div>	
+		</div>
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  
+    <script type="text/javascript">
+    
+    $(document).ready(function() {  
+
+ 
+	    //function to clear text field after submit key
+	    function clearField() {
+	    	$("textarea").val("");
+	    }
+
+	    //function to remove Top Articles results to be used in multiple places
+	    function callback() {
+	    	$(".callback").remove();
+	    }
+
+	    //function for clear button to remove elements in callback area
+	    $(".clear").on("click", function clear () {
+	    	callback();
+	    });	
+
+	    //function for search button to capture variables and displayTopArticles
+	    $(document).on("click", ".search", function search () {
+	    	
+	    	callback();
+
+	    	var q = $("#Textarea1").val();
+	    	var numArt = $("#Select1").val();
+	    	var begin_date = $("#Textarea2").val().trim(); 
+	    	var end_date = $("#Textarea3").val().trim();
+
+		 	var url = "https://api.nytimes.com/svc/search/v2/articlesearch.json";
+		 	url += "?" + $.param({
+		 		"api-key": "b80c2fd13eed469d84e884b3b42ba135",
+		 		"q": q
+		 	});
+		 	
+		 	//Begin date is optional - check to see if user input and update url
+		 	if (parseInt(begin_date)){
+		 		url += "&begin_date=" + begin_date + "0101";
+		 	}
+
+		 	//End date is optional - check to see if user input and update url
+		 	if (parseInt(end_date)){
+		 		url += "&end_date=" + end_date + "1231";
+		 	}
+
+		 	//function to get response from API and display in callback area
+		 	$.ajax({
+		        url: url,
+		        method: 'GET'
+		        }).done(function(response) {
+		          
+		            console.log(response);
+		            var res = response.response.docs;
+		          
+		          	//length needs to be equal to numArt - API returns 10 per page and only returns full pages
+		          	for (var i = 0; i < numArt; i++) {
+		          	
+			          	var newDiv = $("<div class='callback'>" + res[i]);
+			          	var headline = res[i].headline.main;
+			          	var head = $("<h4>").text(headline);
+			          	head.prepend("<span class='label label-primary'>" + (i+1) + "</span>");
+			          	newDiv.append(head);
+
+			          	if (res[i].byline && res[i].byline.hasOwnProperty("original")) {
+			          		p = $("<p>").text(res[i].byline.original);
+			          		newDiv.append(p);
+			          	}
+			          	else {
+			          		p = $("<p>").text("Byline Not Available");
+			          		newDiv.append(p);
+			          	}
+
+			          	if (res[i].pub_date != "null") {
+			          		p = $("<p>").html("Publication Date: "+ (res[i].pub_date));
+			          	    newDiv.append(p);
+			          	}
+			          	else {
+			          		p = $("<p>").text("Publication Date Not Available");
+			          	}
+			          	
+			          	var webURL = res[i].web_url
+			          	
+			          	p = $("<a href>").html(webURL);
+			          	newDiv.append(p);
+						$(".results").append(newDiv);
+		          	}
+
+				  });//end of response
+	    	
+	    	clearField();
+
+	    });//end of search
+	});//end of document ready
+
+    </script>
+
+    <!--Bootstrap links -->
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+</body>
+</html>
